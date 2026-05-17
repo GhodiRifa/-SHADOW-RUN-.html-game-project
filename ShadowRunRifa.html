@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SHADOW RUN</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  background:#020810;
+  width:100%;height:100dvh;
+  overflow:hidden;
+  touch-action:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  font-family:'Orbitron',monospace;
+}
+body{
+  display:flex;flex-direction:column;
+  align-items:center;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,255,200,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,200,0.018) 1px,transparent 1px);
+  background-size:40px 40px;
+  animation:gm 9s linear infinite;
+  pointer-events:none;z-index:0;
+}
+@keyframes gm{to{background-position:40px 40px}}
+
+/* ── MAIN CONTAINER ─────────────────────────────────────────────────────────
+   Fixed max-width of 640px, centered with auto margins.
+   All children use width:100% so they're all equally wide = symmetric.      */
+.container{
+  position:relative;z-index:1;
+  width:100%;
+  max-width:640px;
+  height:100dvh;
+  padding:10px 16px 10px;
+  display:flex;flex-direction:column;
+  align-items:center;   /* center children horizontally */
+  gap:7px;
+}
+
+/* TITLE
+   KEY FIX: letter-spacing adds trailing space that shifts text LEFT visually.
+   transform: translateX(letter-spacing / 2) re-centers it optically.
+   This works reliably on all mobile browsers unlike padding tricks.           */
+.title-block{
+  width:100%;
+  text-align:center;
+  flex-shrink:0;
+  overflow:visible;
+}
+.game-title{
+  display:inline-block;
+  font-size:clamp(20px,5.8vw,30px);
+  font-weight:900;
+  letter-spacing:0.18em;
+  transform:translateX(0.09em);   /* = letter-spacing/2 → optical center ✓ */
+  color:#00FFD1;
+  text-shadow:0 0 18px rgba(0,255,209,.65);
+  animation:tp 3s ease-in-out infinite;
+}
+.game-sub{
+  display:inline-block;
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(9px,2.3vw,12px);
+  letter-spacing:0.22em;
+  transform:translateX(0.11em);   /* = letter-spacing/2 */
+  color:rgba(0,255,209,.38);
+}
+/* Desktop mode hint — always visible, no popup needed */
+.desk-hint{
+  display:block;
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(11px,2.8vw,14px);
+  font-weight:600;
+  letter-spacing:0.08em;
+  color:#FFB020;
+  margin-top:4px;
+  text-align:center;
+}
+@keyframes tp{
+  0%,100%{text-shadow:0 0 18px rgba(0,255,209,.65)}
+  50%{text-shadow:0 0 32px rgba(0,255,209,1),0 0 60px rgba(0,255,209,.3)}
+}
+
+/* HUD — stretches full width of container (minus padding) */
+.hud{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  flex-shrink:0;
+}
+.hud-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.hud-lbl{
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(9px,2.3vw,12px);
+  letter-spacing:0.16em;
+  transform:translateX(0.08em);
+  color:rgba(0,255,209,.4);
+}
+.hud-val{
+  font-size:clamp(16px,4.5vw,22px);font-weight:700;
+  color:#00FFD1;min-width:58px;text-align:center;
+}
+.hud-val.hi{color:#FF2D78}
+.hud-val.lv{color:#B060FF}
+
+/* CANVAS — same width as container content */
+.cw{
+  position:relative;
+  width:100%;
+  aspect-ratio:900/520;
+  border:1.5px solid rgba(0,255,209,.25);
+  border-radius:6px;overflow:hidden;
+  flex-shrink:0;
+}
+.cw canvas{
+  display:block;width:100%;height:100%;
+  image-rendering:pixelated;
+  image-rendering:-webkit-optimize-contrast;
+}
+.cw::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);
+}
+.cn{position:absolute;width:11px;height:11px}
+.cn.tl{top:0;left:0;  border-top:1.5px solid #00FFD1;border-left:1.5px solid #00FFD1}
+.cn.tr{top:0;right:0; border-top:1.5px solid #00FFD1;border-right:1.5px solid #00FFD1}
+.cn.bl{bottom:0;left:0; border-bottom:1.5px solid #00FFD1;border-left:1.5px solid #00FFD1}
+.cn.br{bottom:0;right:0;border-bottom:1.5px solid #00FFD1;border-right:1.5px solid #00FFD1}
+
+/* SPEED BAR */
+.speedbar-wrap{
+  width:100%;
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.speedbar-lbl{
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(9px,2.2vw,11px);letter-spacing:0.16em;
+  color:rgba(0,255,209,.38);white-space:nowrap;
+}
+.speedbar-track{flex:1;height:5px;background:rgba(0,255,209,.1);border-radius:3px;overflow:hidden}
+.speedbar-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#00FFD1,#FF2D78);
+  border-radius:3px;transition:width .5s ease;
+}
+
+/* JUMP BUTTON */
+.jump-btn{
+  width:100%;
+  flex:1;
+  min-height:60px;
+  background:rgba(0,255,209,.05);
+  border:2px solid rgba(0,255,209,.32);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(20px,5.5vw,28px);
+  font-weight:600;color:rgba(0,255,209,.7);
+  transition:background .08s,border-color .08s;
+}
+.jump-btn:active,.jump-btn.pr{
+  background:rgba(0,255,209,.16);
+  border-color:rgba(0,255,209,.85);
+  color:#00FFD1;
+}
+
+/* COPYRIGHT */
+.copy{
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(10px,2.4vw,13px);
+  letter-spacing:0.16em;font-weight:600;
+  color:rgba(0,255,209,.55);
+  text-align:center;flex-shrink:0;
+}
+
+/* jump button letter-spacing compensation */
+.jump-btn-txt{
+  display:inline-block;
+  letter-spacing:0.28em;
+  transform:translateX(0.14em);
+}
+</style>
+</head>
+<body>
+
+<!-- Main game UI -->
+<div class="container" id="gameUI">
+
+  <div class="title-block">
+    <div class="game-title">SHADOW RUN</div>
+    <div class="game-sub">CYBER NINJA CHRONICLES</div>
+    <div class="desk-hint">🖥️ &nbsp;Hidupkan Mode Desktop untuk performa terbaik</div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-item"><div class="hud-lbl">LEVEL</div><div class="hud-val lv" id="Lv">01</div></div>
+    <div class="hud-item"><div class="hud-lbl">SCORE</div><div class="hud-val" id="Sc">000000</div></div>
+    <div class="hud-item"><div class="hud-lbl">BEST</div><div class="hud-val hi" id="Hi">000000</div></div>
+  </div>
+
+  <div class="cw">
+    <div class="cn tl"></div><div class="cn tr"></div>
+    <div class="cn bl"></div><div class="cn br"></div>
+    <canvas id="gc" width="900" height="520"></canvas>
+  </div>
+
+  <div class="speedbar-wrap">
+    <div class="speedbar-lbl">SPEED</div>
+    <div class="speedbar-track"><div class="speedbar-fill" id="spdBar"></div></div>
+  </div>
+
+  <button class="jump-btn" id="bJ" aria-label="Jump">
+    <span class="jump-btn-txt">▲ &nbsp; JUMP</span>
+  </button>
+
+  <div class="copy">© 2026 GHODI RIFA PRAKOSO — ALL RIGHTS RESERVED</div>
+
+</div>
+
+<script>
+// ── CANVAS ───────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('gc');
+const VW = 900, VH = 520;
+const ctx = canvas.getContext('2d', {alpha:false});
+
+const elSc  = document.getElementById('Sc');
+const elHi  = document.getElementById('Hi');
+const elLv  = document.getElementById('Lv');
+const elBar = document.getElementById('spdBar');
+
+// ── COLORS ───────────────────────────────────────────────────────────────────
+const CYN ='#00FFD1', CYN2='rgba(0,255,209,0.28)', CYN3='rgba(0,255,209,0.08)';
+const PNK ='#FF2D78', PNK2='rgba(255,45,120,0.28)';
+const PRP ='#B060FF', PRP2='rgba(176,96,255,0.28)';
+const AMB ='#FFB020', AMB2='rgba(255,176,32,0.28)';
+
+// ── CONSTANTS ────────────────────────────────────────────────────────────────
+const GY       = VH - 75;
+const GRAV     = 1080;
+const JV       = -480;
+const BASE_SPD = 250;
+const MAX_SPD  = 750;
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let state='idle', score=0, best=0, frame=0;
+let spd=BASE_SPD, lvl=1, lastTs=0, gridOff=0;
+
+// ── NINJA ────────────────────────────────────────────────────────────────────
+const N={x:44,y:GY,w:32,h:50,vy:0,onGround:true,rf:0,rt:0,trail:[],tt:0};
+
+// ── OBSTACLES ────────────────────────────────────────────────────────────────
+let obs=[], oAcc=0, oNext=800;
+
+// ── PARTICLES ────────────────────────────────────────────────────────────────
+let parts=[];
+
+// ── BG DATA ──────────────────────────────────────────────────────────────────
+let farBlds=[], midBlds=[], strs=[], sigs=[];
+const SIG_TXT=['忍者','HACK','RUN','危','CYBER','影','VOID','SYNC','刀','NEXUS'];
+
+function rn(a,b){return a+Math.random()*(b-a)}
+function ri(a,b){return 0|a+Math.random()*(b-a)}
+function fmt(n){return(''+Math.floor(n)).padStart(6,'0')}
+
+function buildWins(b){
+  b.wins=[];
+  const cols=0|b.w/14, rows=0|b.h/16;
+  for(let r=0;r<rows;r++)
+    for(let c=0;c<cols;c++)
+      b.wins.push({on:Math.random()>.45,col:ri(0,3),ft:rn(0,100),flk:Math.random()>.85,_r:r,_c:c});
+}
+function initBG(){
+  farBlds=[]; midBlds=[]; strs=[]; sigs=[];
+  for(let i=0;i<16;i++)
+    farBlds.push({x:rn(0,VW*1.8),w:ri(28,80),h:ri(30,115),spd:50});
+  for(let i=0;i<10;i++){
+    const b={x:i*110+ri(0,50),w:ri(44,108),h:ri(52,130),spd:110,wins:[]};
+    buildWins(b); midBlds.push(b);
+  }
+  for(let i=0;i<85;i++)
+    strs.push({x:rn(0,VW),y:rn(0,VH*.55),r:rn(.3,1.3),spd:rn(5,20)});
+  for(let i=0;i<5;i++)
+    sigs.push({x:rn(0,VW*1.8),y:ri(22,115),
+      txt:SIG_TXT[ri(0,SIG_TXT.length)],
+      col:[CYN,PNK,PRP,AMB][ri(0,4)],
+      spd:rn(32,62),flk:0});
+}
+initBG();
+
+// ── PORTAL CACHE ─────────────────────────────────────────────────────────────
+// Pre-render portal shape once to an offscreen canvas → no per-pixel fillRect loop
+const PORTAL_W = 48, PORTAL_H = 80;
+const portalCache = document.createElement('canvas');
+portalCache.width  = PORTAL_W + 20;
+portalCache.height = PORTAL_H + 20;
+const pctx = portalCache.getContext('2d');
+function bakePortal(rx, ry){
+  const pw = rx*2+20, ph = ry*2+20;
+  portalCache.width  = pw;
+  portalCache.height = ph;
+  pctx.clearRect(0,0,pw,ph);
+  const cx=pw/2, cy=ph/2;
+  // outer halo
+  pctx.strokeStyle=PRP2; pctx.lineWidth=14;
+  pctx.beginPath(); pctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); pctx.stroke();
+  // inner fill
+  const rg=pctx.createRadialGradient(cx,cy,0,cx,cy,rx);
+  rg.addColorStop(0,'rgba(176,96,255,0.22)');
+  rg.addColorStop(1,'rgba(176,96,255,0)');
+  pctx.fillStyle=rg;
+  pctx.beginPath(); pctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); pctx.fill();
+  // solid ring
+  pctx.strokeStyle=PRP; pctx.lineWidth=3;
+  pctx.beginPath(); pctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); pctx.stroke();
+  // inner ring
+  pctx.strokeStyle=PNK; pctx.lineWidth=2;
+  pctx.beginPath(); pctx.ellipse(cx,cy,rx*.6,ry*.6,0,0,Math.PI*2); pctx.stroke();
+}
+
+// ── DRAW NINJA ───────────────────────────────────────────────────────────────
+function drawNinja(x,y,rf,alpha){
+  if(alpha<=0) return;
+  ctx.save(); ctx.globalAlpha=alpha;
+  const h=N.h, by=y-h;
+  const leg=Math.sin(rf*.5)*11, arm=Math.sin(rf*.5)*5;
+
+  if(alpha>.55){ ctx.fillStyle=CYN3; ctx.fillRect(x-1,by-2,N.w+4,h+4); }
+
+  ctx.fillStyle='#0C0C1C';
+  ctx.fillRect(x+4,by+15,23,21);
+  ctx.fillRect(x+5,by,21,16);
+  ctx.fillStyle=CYN;
+  ctx.fillRect(x+8,by+7,14,2);
+  ctx.fillRect(x+10,by+3,4,2.5);
+  ctx.fillRect(x+20,by+3,4,2.5);
+  ctx.fillStyle=PNK;
+  ctx.fillRect(x+3,by+14,26,4);
+  ctx.fillStyle=CYN2;
+  ctx.fillRect(x+11,by+15,10,18);
+  ctx.fillStyle='#0C0C1C';
+  ctx.fillRect(x,   by+16+arm,6,15);
+  ctx.fillRect(x+26,by+16-arm,6,15);
+  ctx.fillStyle=CYN;
+  ctx.fillRect(x+29,by,2,20);
+  ctx.fillStyle=CYN2;
+  ctx.fillRect(x+31,by+2,2,15);
+  ctx.fillStyle='#0C0C1C';
+  ctx.fillRect(x+7, by+35,8,h-35+leg);
+  ctx.fillRect(x+18,by+35,8,h-35-leg);
+  ctx.fillStyle=PRP;
+  ctx.fillRect(x+5, by+h-9+leg,14,6);
+  ctx.fillRect(x+16,by+h-9-leg,14,6);
+
+  ctx.restore();
+}
+
+// ── DRAW OBSTACLE ────────────────────────────────────────────────────────────
+function drawObs(o){
+  switch(o.type){
+
+    case 'barrier':{
+      ctx.fillStyle=CYN3;
+      ctx.fillRect(o.x-2,o.y-o.h-4,o.w+4,o.h+6);
+      ctx.fillStyle='#091E2C';
+      ctx.fillRect(o.x,       o.y-o.h,7,o.h);
+      ctx.fillRect(o.x+o.w-7, o.y-o.h,7,o.h);
+      ctx.fillStyle='rgba(0,255,209,0.06)';
+      ctx.fillRect(o.x+7,o.y-o.h,o.w-14,o.h);
+      ctx.fillStyle='rgba(0,255,209,0.12)';
+      ctx.fillRect(o.x+7+(o.w-14)*.3,o.y-o.h,(o.w-14)*.4,o.h);
+      ctx.fillStyle=CYN2;
+      for(let sy=o.y-o.h+2;sy<o.y;sy+=5) ctx.fillRect(o.x+7,sy,o.w-14,1);
+      ctx.fillStyle=CYN;
+      ctx.fillRect(o.x,o.y-o.h-3,o.w,4);
+      break;
+    }
+
+    case 'spike':{
+      const seg=o.w/o.count;
+      for(let i=0;i<o.count;i++){
+        const sx=o.x+i*seg;
+        const sh=o.h+(i%2===0?9:0);
+        // glow halo at base
+        ctx.fillStyle=i%2===0?AMB2:'rgba(255,96,32,0.25)';
+        ctx.fillRect(sx-1,GY-sh-1,seg+2,sh+2);
+        // spike: row 0=tip(narrow), row sh-1=base(wide) ─ points UP ✓
+        ctx.fillStyle=i%2===0?AMB:'#FF6020';
+        const half=seg*.5;
+        for(let row=0;row<sh;row++){
+          const t = row / sh;                // 0 at tip → 1 at base
+          const sw = Math.max(1, half*t*2);
+          ctx.fillRect(sx+half-sw/2, GY-sh+row, sw, 1);
+        }
+      }
+      break;
+    }
+
+    case 'mech':{
+      const mx=o.x, my=o.y;
+      ctx.fillStyle=PRP2; ctx.fillRect(mx-2,my-o.h-2,o.w+4,o.h+4);
+      ctx.fillStyle='#1E0628';
+      ctx.fillRect(mx+4,     my-20,9,20);
+      ctx.fillRect(mx+o.w-13,my-20,9,20);
+      ctx.fillStyle=PRP;
+      ctx.fillRect(mx+2,     my-4,14,5);
+      ctx.fillRect(mx+o.w-16,my-4,14,5);
+      ctx.fillStyle='#160524';
+      ctx.fillRect(mx+2,my-o.h,o.w-4,o.h-20);
+      ctx.fillStyle=PRP2;
+      ctx.fillRect(mx+6,my-o.h+5,o.w-12,o.h-30);
+      ctx.fillStyle='#1E0628';
+      ctx.fillRect(mx,      my-o.h+3,7,13);
+      ctx.fillRect(mx+o.w-7,my-o.h+3,7,13);
+      ctx.fillRect(mx+6,my-o.h-13,o.w-12,15);
+      ctx.fillStyle=PNK;
+      ctx.fillRect(mx+9,my-o.h-9,o.w-18,5);
+      ctx.fillStyle=PRP;
+      ctx.fillRect(mx+o.w/2-4,my-o.h+9,8,8);
+      break;
+    }
+
+    case 'portal':{
+      // Use pre-rendered cache — single drawImage instead of 2*ry fillRects
+      const pls=0.82+Math.sin(frame*.1+o.ph)*.16;
+      const baseRX=o.w/2, baseRY=o.h/2;
+      const rx=Math.round(baseRX*pls);
+      const ry=Math.round(baseRY);
+      // Re-bake only when dimensions meaningfully change (first frame is fine)
+      if(!o._baked || o._br!==rx){
+        bakePortal(rx,ry);
+        o._baked=true; o._br=rx;
+      }
+      const pw=portalCache.width, ph2=portalCache.height;
+      const cx=o.x+o.w/2, cy=o.y-o.h/2;
+      ctx.drawImage(portalCache, cx-pw/2, cy-ph2/2, pw, ph2);
+      break;
+    }
+  }
+}
+
+// ── SPAWN ────────────────────────────────────────────────────────────────────
+function spawnObs(){
+  const pool=lvl<3
+    ?['barrier','spike','barrier','spike','mech']
+    :['barrier','spike','mech','portal','barrier','spike','mech'];
+  const type=pool[ri(0,pool.length)];
+  switch(type){
+    case 'barrier': obs.push({type,x:VW+20,y:GY,w:ri(22,46),h:ri(30,55)}); break;
+    case 'spike':   obs.push({type,x:VW+20,y:GY,w:ri(38,72),h:ri(20,38),count:ri(3,6)}); break;
+    case 'mech':    obs.push({type,x:VW+20,y:GY,w:ri(36,50),h:ri(50,68)}); break;
+    case 'portal':  obs.push({type,x:VW+20,y:GY,w:48,h:ri(56,84),ph:rn(0,Math.PI*2),_baked:false}); break;
+  }
+  const minG=Math.max(440,720-lvl*28), maxG=Math.max(640,1020-lvl*30);
+  oNext=ri(minG,maxG); oAcc=0;
+}
+
+// ── HITBOX / COLLISION ───────────────────────────────────────────────────────
+function hitbox(o){
+  const m=9;
+  switch(o.type){
+    case 'barrier': return{x:o.x+m,y:o.y-o.h+m,    w:o.w-m*2,h:o.h-m};
+    case 'spike':   return{x:o.x+m,y:GY-o.h+7,     w:o.w-m*2,h:o.h-9};
+    case 'mech':    return{x:o.x+m,y:o.y-o.h+m,    w:o.w-m*2,h:o.h-m};
+    case 'portal':  return{x:o.x+10+m,y:o.y-o.h+10+m,w:o.w-20-m*2,h:o.h-20-m};
+    default:        return{x:o.x,y:o.y-20,w:20,h:20};
+  }
+}
+function collides(){
+  const m=9, nh=N.h;
+  const nx=N.x+m, ny=N.y-nh+m, nw=N.w-m*2, nnh=nh-m*2;
+  for(const o of obs){
+    const h=hitbox(o);
+    if(nx<h.x+h.w&&nx+nw>h.x&&ny<h.y+h.h&&ny+nnh>h.y) return true;
+  }
+  return false;
+}
+
+// ── PARTICLES ────────────────────────────────────────────────────────────────
+function addParts(x,y,col,n,type){
+  for(let i=0;i<n;i++){
+    const a=rn(0,Math.PI*2), sp=rn(40,type==='death'?280:170);
+    parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(type==='death'?105:0),
+      life:1,dec:rn(.8,1.6),r:rn(1.5,type==='death'?5:3),col});
+  }
+}
+
+// ── DRAW BG ──────────────────────────────────────────────────────────────────
+function drawBG(){
+  ctx.fillStyle='#020810'; ctx.fillRect(0,0,VW,VH);
+  ctx.fillStyle='rgba(0,255,209,0.022)'; ctx.fillRect(0,VH*.3,VW,GY-VH*.3);
+
+  ctx.fillStyle='#C8F0FF'; ctx.globalAlpha=.58;
+  for(const s of strs) ctx.fillRect(s.x-.5,s.y-.5,s.r*2,s.r*2);
+  ctx.globalAlpha=1;
+
+  for(const b of farBlds){
+    ctx.fillStyle='#030D17'; ctx.fillRect(b.x,GY-b.h,b.w,b.h);
+    ctx.fillStyle='rgba(0,255,209,0.08)';
+    for(let wy=GY-b.h+5;wy<GY-5;wy+=9)
+      for(let wx=b.x+4;wx<b.x+b.w-4;wx+=9)
+        if((wy+wx)%17<6) ctx.fillRect(wx,wy,2,2);
+  }
+
+  ctx.font='bold 11px Orbitron,monospace';
+  for(const sg of sigs){
+    if(sg.flk>0) continue;
+    ctx.fillStyle=sg.col; ctx.globalAlpha=.46;
+    ctx.fillText(sg.txt,sg.x,sg.y);
+  }
+  ctx.globalAlpha=1;
+
+  for(const b of midBlds){
+    ctx.fillStyle='#04151F'; ctx.fillRect(b.x,GY-b.h,b.w,b.h);
+    for(const w of b.wins){
+      if(!w.on) continue;
+      if(w.flk&&Math.sin(frame*.08+w.ft)>.4) continue;
+      ctx.globalAlpha=.55;
+      ctx.fillStyle=w.col===0?'rgba(0,255,209,0.55)':w.col===1?'rgba(176,96,255,0.45)':'rgba(255,176,32,0.38)';
+      ctx.fillRect(b.x+3+w._c*13,GY-b.h+5+w._r*15,7,8);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  ctx.fillStyle='#0A2030'; ctx.fillRect(0,GY,VW,VH-GY);
+  ctx.fillStyle=CYN;  ctx.fillRect(0,GY,VW,2);
+  ctx.fillStyle=CYN3; ctx.fillRect(0,GY+2,VW,6);
+  ctx.fillStyle='rgba(0,255,209,0.08)';
+  for(let gx=gridOff%55;gx<VW;gx+=55) ctx.fillRect(gx,GY,1,VH-GY);
+}
+
+// ── OVERLAYS ─────────────────────────────────────────────────────────────────
+function drawIdle(){
+  ctx.fillStyle='rgba(2,8,16,0.75)'; ctx.fillRect(0,0,VW,VH);
+  ctx.fillStyle=CYN; ctx.font='900 38px Orbitron,monospace'; ctx.textAlign='center';
+  ctx.fillText('SHADOW RUN',VW/2,VH/2-24);
+  ctx.fillStyle='rgba(0,255,209,0.62)'; ctx.font='600 15px Rajdhani,sans-serif';
+  ctx.fillText('TAP  JUMP  TO  START',VW/2,VH/2+14);
+  ctx.fillStyle='rgba(0,255,209,0.32)'; ctx.font='600 12px Rajdhani,sans-serif';
+  ctx.fillText('JUMP OVER ALL OBSTACLES',VW/2,VH/2+40);
+  ctx.textAlign='left';
+}
+function drawDead(){
+  ctx.fillStyle='rgba(2,8,16,0.76)'; ctx.fillRect(0,0,VW,VH);
+  ctx.fillStyle=PNK; ctx.font='900 32px Orbitron,monospace'; ctx.textAlign='center';
+  ctx.fillText('MISSION FAILED',VW/2,VH/2-26);
+  ctx.fillStyle=CYN; ctx.font='700 20px Orbitron,monospace';
+  ctx.fillText('SCORE  '+fmt(score),VW/2,VH/2+10);
+  ctx.fillStyle='rgba(0,255,209,0.52)'; ctx.font='600 14px Rajdhani,sans-serif';
+  ctx.fillText('TAP  JUMP  TO  RETRY',VW/2,VH/2+36);
+  ctx.textAlign='left';
+}
+
+// ── ACTIONS ──────────────────────────────────────────────────────────────────
+function doJump(){
+  if(state==='idle'||state==='dead'){startGame();return;}
+  if(N.onGround){
+    N.vy=JV; N.onGround=false;
+    addParts(N.x+N.w/2,N.y,CYN,7,'jump');
+  }
+}
+
+function startGame(){
+  state='running'; score=0; frame=0; spd=BASE_SPD; lvl=1; lastTs=0;
+  obs=[]; parts=[]; oAcc=0; oNext=800; gridOff=0;
+  N.y=GY; N.vy=0; N.onGround=true; N.rf=0; N.rt=0; N.trail=[];
+  initBG();
+}
+
+// ── UPDATE ───────────────────────────────────────────────────────────────────
+function update(dt){
+  if(state!=='running') return;
+  frame++;
+
+  const raw=BASE_SPD+Math.pow(score/55,1.2)*3.8;
+  spd=Math.min(MAX_SPD,raw);
+  lvl=Math.min(10,1+Math.floor(score/400));
+  score+=spd*dt*.065;
+  gridOff+=spd*dt;
+
+  N.vy+=GRAV*dt; N.y+=N.vy*dt;
+  if(N.y>=GY){N.y=GY;N.vy=0;N.onGround=true;}
+
+  N.rt+=dt; if(N.rt>=.07){N.rt=0;N.rf++;}
+
+  N.tt+=dt;
+  if(N.tt>=.06&&spd>370){N.tt=0;N.trail.push({x:N.x,y:N.y,a:.32});}
+  N.trail=N.trail.filter(t=>{t.a-=1.8*dt;return t.a>0;});
+
+  oAcc+=spd*dt;
+  if(oAcc>=oNext) spawnObs();
+  for(const o of obs) o.x-=spd*dt;
+  obs=obs.filter(o=>o.x>-180);
+
+  if(collides()){
+    state='dead'; if(score>best) best=score;
+    addParts(N.x+N.w/2,N.y-N.h/2,PNK,22,'death');
+    addParts(N.x+N.w/2,N.y-N.h/2,CYN,12,'death');
+    return;
+  }
+
+  for(const p of parts){
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.vy+=GRAV*.28*dt; p.life-=p.dec*dt;
+  }
+  parts=parts.filter(p=>p.life>0);
+
+  const sr=spd/BASE_SPD;
+  for(const b of farBlds){
+    b.x-=b.spd*.23*dt*sr;
+    if(b.x+b.w<0){b.x=VW+ri(0,80);b.w=ri(28,80);b.h=ri(30,115);}
+  }
+  for(const b of midBlds){
+    b.x-=b.spd*.55*dt*sr;
+    if(b.x+b.w<0){b.x=VW+ri(0,60);b.w=ri(44,108);b.h=ri(52,130);buildWins(b);}
+  }
+  for(const s of strs){s.x-=s.spd*dt;if(s.x<0){s.x=VW;s.y=rn(0,VH*.55);}}
+  for(const sg of sigs){
+    sg.x-=sg.spd*dt*sr;
+    if(sg.flk>0) sg.flk-=dt*25;
+    if(Math.random()<.002) sg.flk=rn(4,18);
+    if(sg.x<-80){sg.x=VW+ri(60,300);sg.txt=SIG_TXT[ri(0,SIG_TXT.length)];sg.col=[CYN,PNK,PRP,AMB][ri(0,4)];}
+  }
+
+  elSc.textContent=fmt(score);
+  elHi.textContent=fmt(best);
+  elLv.textContent=(''+lvl).padStart(2,'0');
+  const pct=Math.min(100,((spd-BASE_SPD)/(MAX_SPD-BASE_SPD))*100);
+  elBar.style.width=pct+'%';
+}
+
+// ── DRAW ─────────────────────────────────────────────────────────────────────
+function draw(){
+  drawBG();
+  for(const t of N.trail) drawNinja(t.x,t.y,N.rf,t.a);
+  for(const o of obs) drawObs(o);
+  if(state!=='dead') drawNinja(N.x,N.y,N.rf,1);
+  ctx.globalAlpha=1;
+  for(const p of parts){
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=p.col;
+    ctx.fillRect(p.x-p.r,p.y-p.r,p.r*2,p.r*2);
+  }
+  ctx.globalAlpha=1;
+  if(state==='running'&&spd>430){
+    ctx.globalAlpha=Math.min(.07,(spd-430)/5000);
+    ctx.fillStyle=CYN;
+    for(let k=0;k<8;k++){
+      const ly=rn(5,GY-5),lx=rn(VW*.3,VW*.95),ll=rn(20,80);
+      ctx.fillRect(lx-ll,ly,ll,1);
+    }
+    ctx.globalAlpha=1;
+  }
+  if(state==='idle') drawIdle();
+  if(state==='dead') drawDead();
+}
+
+// ── LOOP ─────────────────────────────────────────────────────────────────────
+function loop(ts){
+  const dt=lastTs?Math.min((ts-lastTs)/1000,.05):.016;
+  lastTs=ts; update(dt); draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ── INPUT ────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();doJump();}
+});
+const bJ=document.getElementById('bJ');
+bJ.addEventListener('touchstart',e=>{e.preventDefault();bJ.classList.add('pr');doJump();},{passive:false});
+bJ.addEventListener('touchend',  e=>{e.preventDefault();bJ.classList.remove('pr');},{passive:false});
+bJ.addEventListener('mousedown', ()=>doJump());
+canvas.addEventListener('touchstart',e=>{e.preventDefault();doJump();},{passive:false});
+canvas.addEventListener('click',()=>doJump());
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+</script>
+</body>
+</html>
